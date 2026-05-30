@@ -156,9 +156,85 @@ rewards.removeAllListeners(eventName?: string): void
 
 ## Storage
 
-By default, all data lives in-memory. It is reset when the process restarts. This is intentional for the MVP — no setup, no persistence concerns.
+By default, all data lives in-memory. It resets when the process restarts. Use the persistence API below to save and reload state without any database.
 
-A persistent adapter (PostgreSQL, Redis) can be wired in by extending `MemoryStore` in a future release.
+---
+
+## Persistence
+
+Save the entire state to a JSON file and reload it later — no database required.
+
+```ts
+// Save to disk (e.g. on graceful shutdown)
+await rewards.persist("./rewards-state.json");
+
+// Restore on next startup
+const rewards = new AfuRewards();
+await rewards.restore("./rewards-state.json");
+```
+
+For in-process transfers (e.g. serverless functions sharing state via an external store), use the sync variants:
+
+```ts
+// Get a plain serializable object
+const snapshot = rewards.snapshot();
+
+// Load it back into any AfuRewards instance
+const rewards2 = new AfuRewards();
+rewards2.loadSnapshot(snapshot);
+```
+
+### Typical startup pattern
+
+```ts
+import AfuRewards from "@afuchat/rewards";
+import { existsSync } from "node:fs";
+
+const STATE_FILE = "./rewards-state.json";
+
+const rewards = new AfuRewards();
+if (existsSync(STATE_FILE)) {
+  await rewards.restore(STATE_FILE);
+}
+
+// ... run your app ...
+
+// On shutdown
+process.on("SIGTERM", async () => {
+  await rewards.persist(STATE_FILE);
+  process.exit(0);
+});
+```
+
+### Snapshot format
+
+The snapshot is a plain JSON object with version, timestamp, and all user records:
+
+```json
+{
+  "version": 1,
+  "savedAt": "2026-05-30T16:20:01.725Z",
+  "users": {
+    "alice": {
+      "xp": 300,
+      "points": 50,
+      "badges": [{ "id": "Starter", "name": "Starter", "description": "...", "unlockedAt": "..." }],
+      "streak": { "current": 1, "longest": 1, "lastUpdated": "..." }
+    }
+  }
+}
+```
+
+`restore()` fully **replaces** the current in-memory state (not merges). Date strings are automatically converted back to `Date` objects. An unsupported `version` number throws immediately.
+
+### API
+
+```ts
+rewards.persist(filePath: string): Promise<void>
+rewards.restore(filePath: string): Promise<void>
+rewards.snapshot(): SerializedStore
+rewards.loadSnapshot(snapshot: SerializedStore): void
+```
 
 ---
 
@@ -173,6 +249,7 @@ import type {
   AfuRewardsConfig,
   LeaderboardEntry,
   LevelConfig,
+  SerializedStore,
   StreakRecord,
 } from "@afuchat/rewards";
 ```

@@ -1,4 +1,6 @@
+import { readFile, writeFile } from "node:fs/promises";
 import { MemoryStore } from "./storage/memory-store.js";
+import type { SerializedStore } from "./storage/memory-store.js";
 import { XPModule } from "./modules/xp.js";
 import { PointsModule } from "./modules/points.js";
 import { LevelsModule } from "./modules/levels.js";
@@ -140,5 +142,36 @@ export class AfuRewards {
 
   removeAllListeners(eventName?: string): void {
     this.events.removeAllListeners(eventName);
+  }
+
+  // ─── Persistence ───────────────────────────────────────────────────────────
+
+  async persist(filePath: string): Promise<void> {
+    const snapshot = this.store.serialize();
+    await writeFile(filePath, JSON.stringify(snapshot, null, 2), "utf8");
+  }
+
+  async restore(filePath: string): Promise<void> {
+    const raw = await readFile(filePath, "utf8");
+    const snapshot = JSON.parse(raw) as SerializedStore;
+    if (snapshot.version !== 1) {
+      throw new Error(
+        `Unsupported snapshot version: ${(snapshot as { version: number }).version}`,
+      );
+    }
+    this.store.deserialize(snapshot);
+  }
+
+  snapshot(): SerializedStore {
+    return this.store.serialize();
+  }
+
+  loadSnapshot(snapshot: SerializedStore): void {
+    if (snapshot.version !== 1) {
+      throw new Error(
+        `Unsupported snapshot version: ${(snapshot as { version: number }).version}`,
+      );
+    }
+    this.store.deserialize(snapshot);
   }
 }

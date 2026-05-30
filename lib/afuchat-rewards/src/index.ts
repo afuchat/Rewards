@@ -9,5 +9,6 @@ export type {
   UserRecord,
 } from "./types.js";
 export type { BadgeDefinition } from "./modules/badges.js";
+export type { SerializedStore } from "./storage/memory-store.js";
 
 export { AfuRewards as default } from "./AfuRewards.js";
