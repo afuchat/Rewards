@@ -1,4 +1,3 @@
-import { readFile, writeFile } from "node:fs/promises";
 import { MemoryStore } from "./storage/memory-store.js";
 import type { SerializedStore } from "./storage/memory-store.js";
 import { XPModule } from "./modules/xp.js";
@@ -147,11 +146,13 @@ export class AfuRewards {
   // ─── Persistence ───────────────────────────────────────────────────────────
 
   async persist(filePath: string): Promise<void> {
+    const { writeFile } = await import("node:fs/promises");
     const snapshot = this.store.serialize();
     await writeFile(filePath, JSON.stringify(snapshot, null, 2), "utf8");
   }
 
   async restore(filePath: string): Promise<void> {
+    const { readFile } = await import("node:fs/promises");
     const raw = await readFile(filePath, "utf8");
     const snapshot = JSON.parse(raw) as SerializedStore;
     if (snapshot.version !== 1) {
