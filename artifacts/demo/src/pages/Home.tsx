@@ -237,18 +237,23 @@ function PlaygroundTab({
   const {
     getUserStats,
     getLeaderboard,
+    getCatalog,
+    getRedemptions,
     addXP,
     addPoints,
     deductPoints,
     unlockBadge,
     updateStreak,
     resetStreak,
+    redeemReward,
     log,
     liveCode,
   } = useRewards();
 
   const stats = getUserStats(activeUser);
   const leaderboard = getLeaderboard(lbType);
+  const catalog = getCatalog();
+  const redemptions = getRedemptions(activeUser);
   const { pct, end } = xpProgress(stats.xp, stats.level);
   const unlockedIds = new Set(stats.badges.map((b) => b.id));
 
@@ -586,6 +591,100 @@ function PlaygroundTab({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── Reward Catalog ────────────────────────────────────────────────── */}
+      <div className="rounded-xl bg-slate-900/80 border border-slate-700/50 overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700/40">
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-mono text-slate-500 uppercase tracking-widest">
+              reward catalog
+            </span>
+            <span className="text-[11px] font-mono text-slate-600">
+              — <span className="text-blue-300">redeemReward</span>(userId, rewardId) →{" "}
+              <span className="text-yellow-200">RedemptionRecord</span> |{" "}
+              <span className="text-orange-400">null</span>
+            </span>
+          </div>
+          <span className="text-[11px] font-mono text-emerald-400">
+            💰 {stats.points} pts available
+          </span>
+        </div>
+
+        <div className="p-4 grid grid-cols-3 gap-3 xl:grid-cols-6">
+          {catalog.map((reward) => {
+            const canAfford = stats.points >= reward.pointsCost;
+            const claimed = redemptions.some((r) => r.rewardId === reward.id);
+            return (
+              <div
+                key={reward.id}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-4 rounded-xl border text-center transition-all",
+                  claimed
+                    ? "bg-emerald-500/8 border-emerald-500/20"
+                    : canAfford
+                    ? "bg-slate-800/60 border-slate-700/40 hover:border-pink-500/30 hover:bg-slate-800/80"
+                    : "bg-slate-800/30 border-slate-700/20 opacity-60",
+                )}
+              >
+                <span className="text-4xl leading-none">{reward.icon}</span>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[13px] font-semibold text-slate-200">
+                    {reward.name}
+                  </span>
+                  <span className="text-[11px] text-slate-500 leading-tight line-clamp-2">
+                    {reward.description}
+                  </span>
+                </div>
+                <div className="mt-auto w-full space-y-1.5">
+                  <div className="text-[12px] font-mono font-bold text-emerald-400">
+                    💰 {reward.pointsCost} pts
+                  </div>
+                  {claimed ? (
+                    <div className="w-full py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-[11px] font-mono font-semibold">
+                      ✓ Claimed
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => redeemReward(activeUser, reward.id)}
+                      disabled={!canAfford}
+                      className={cn(
+                        "w-full py-1.5 rounded-lg border text-[11px] font-mono font-semibold transition-colors active:scale-95",
+                        canAfford
+                          ? "bg-pink-500/15 border-pink-500/30 text-pink-300 hover:bg-pink-500/25 hover:border-pink-400/40"
+                          : "bg-slate-700/20 border-slate-700/30 text-slate-600 cursor-not-allowed",
+                      )}
+                    >
+                      {canAfford ? "Redeem" : `Need ${reward.pointsCost - stats.points} more`}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {redemptions.length > 0 && (
+          <div className="px-5 pb-4 border-t border-slate-700/30 pt-3">
+            <div className="text-[11px] font-mono text-slate-600 mb-2 uppercase tracking-widest">
+              {activeUser}'s redemptions ({redemptions.length})
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {redemptions.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/8 border border-emerald-500/15 text-[12px] font-mono"
+                >
+                  <span className="text-emerald-300 font-semibold">{r.rewardName}</span>
+                  <span className="text-slate-600">−{r.pointsSpent} pts</span>
+                  <span className="text-slate-700">
+                    {r.redeemedAt.toLocaleTimeString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

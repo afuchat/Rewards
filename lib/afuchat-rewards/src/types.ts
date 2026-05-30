@@ -12,11 +12,29 @@ export interface StreakRecord {
   lastUpdated: Date | null;
 }
 
+export interface Reward {
+  id: string;
+  name: string;
+  description: string;
+  pointsCost: number;
+  icon?: string;
+  stock?: number;
+}
+
+export interface RedemptionRecord {
+  id: string;
+  rewardId: string;
+  rewardName: string;
+  pointsSpent: number;
+  redeemedAt: Date;
+}
+
 export interface UserRecord {
   xp: number;
   points: number;
   badges: Badge[];
   streak: StreakRecord;
+  redemptions: RedemptionRecord[];
 }
 
 export interface LeaderboardEntry {

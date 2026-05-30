@@ -2,8 +2,20 @@
   "name": "@afuchat/rewards",
   "version": "1.0.0",
   "description": "Zero-config gamification SDK — XP, points, levels, badges, streaks, and leaderboards out of the box.",
-  "keywords": ["gamification", "xp", "points", "badges", "streaks", "leaderboard", "sdk"],
+  "keywords": ["gamification", "xp", "points", "badges", "streaks", "leaderboard", "rewards", "sdk", "typescript"],
   "license": "MIT",
+  "author": "AfuChat",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/afuchat/rewards"
+  },
+  "homepage": "https://github.com/afuchat/rewards#readme",
+  "bugs": {
+    "url": "https://github.com/afuchat/rewards/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

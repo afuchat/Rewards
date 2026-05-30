@@ -21,6 +21,13 @@ interface SerializedUserRecord {
     longest: number;
     lastUpdated: string | null;
   };
+  redemptions: Array<{
+    id: string;
+    rewardId: string;
+    rewardName: string;
+    pointsSpent: number;
+    redeemedAt: string;
+  }>;
 }
 
 export class MemoryStore {
@@ -33,6 +40,7 @@ export class MemoryStore {
         points: 0,
         badges: [],
         streak: { current: 0, longest: 0, lastUpdated: null },
+        redemptions: [],
       });
     }
     return this.users.get(userId)!;
@@ -64,6 +72,13 @@ export class MemoryStore {
           longest: record.streak.longest,
           lastUpdated: record.streak.lastUpdated?.toISOString() ?? null,
         },
+        redemptions: record.redemptions.map((r) => ({
+          id: r.id,
+          rewardId: r.rewardId,
+          rewardName: r.rewardName,
+          pointsSpent: r.pointsSpent,
+          redeemedAt: r.redeemedAt.toISOString(),
+        })),
       };
     }
     return { version: 1, savedAt: new Date().toISOString(), users };
@@ -89,6 +104,13 @@ export class MemoryStore {
             ? new Date(raw.streak.lastUpdated)
             : null,
         },
+        redemptions: (raw.redemptions ?? []).map((r) => ({
+          id: r.id,
+          rewardId: r.rewardId,
+          rewardName: r.rewardName,
+          pointsSpent: r.pointsSpent,
+          redeemedAt: new Date(r.redeemedAt),
+        })),
       });
     }
   }

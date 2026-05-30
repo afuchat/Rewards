@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { rewards, type User } from "../sdk";
-import type { Badge, LeaderboardEntry, StreakRecord } from "@afuchat/rewards";
+import type { Badge, LeaderboardEntry, Reward, RedemptionRecord, StreakRecord } from "@afuchat/rewards";
 
 export interface EventLogEntry {
   id: number;
@@ -26,6 +26,7 @@ const EVENT_COLORS: Record<string, string> = {
   badge_unlocked: "text-amber-400",
   streak_updated: "text-orange-400",
   streak_reset: "text-slate-400",
+  reward_redeemed: "text-pink-400",
 };
 
 function formatPayload(event: string, payload: unknown): string {
@@ -52,6 +53,10 @@ function formatPayload(event: string, payload: unknown): string {
   if (event === "streak_reset") {
     const p = payload as { userId: string };
     return `${p.userId}  streak reset → 0`;
+  }
+  if (event === "reward_redeemed") {
+    const p = payload as { userId: string; record: RedemptionRecord; pointsRemaining: number };
+    return `${p.userId}  "${p.record.rewardName}"  pts left: ${p.pointsRemaining}`;
   }
   return JSON.stringify(payload);
 }
@@ -93,6 +98,7 @@ export function useRewards() {
       "badge_unlocked",
       "streak_updated",
       "streak_reset",
+      "reward_redeemed",
     ];
 
     const handlers: Array<[string, (p: unknown) => void]> = EVENTS.map(
@@ -229,15 +235,58 @@ export function useRewards() {
     });
   }, []);
 
+  const redeemReward = useCallback((userId: User, rewardId: string) => {
+    const record = rewards.redeemReward(userId, rewardId);
+    const pointsRemaining = rewards.getPoints(userId);
+    if (record) {
+      setLiveCode({
+        callLine: `rewards.redeemReward("${userId}", "${rewardId}")`,
+        returnLine: `// → RedemptionRecord { rewardName: "${record.rewardName}", pointsSpent: ${record.pointsSpent} }`,
+        eventName: "reward_redeemed",
+        eventPayloadLines: [
+          `{`,
+          `  userId: "${userId}",`,
+          `  record: {`,
+          `    rewardId: "${record.rewardId}",`,
+          `    rewardName: "${record.rewardName}",`,
+          `    pointsSpent: ${record.pointsSpent}`,
+          `  },`,
+          `  pointsRemaining: ${pointsRemaining}`,
+          `}`,
+        ],
+      });
+    } else {
+      setLiveCode({
+        callLine: `rewards.redeemReward("${userId}", "${rewardId}")`,
+        returnLine: `// → null  (insufficient points or out of stock)`,
+        eventName: "",
+        eventPayloadLines: [],
+      });
+    }
+  }, []);
+
+  const getCatalog = useCallback(
+    (): Array<Reward & { stockRemaining?: number }> => rewards.getCatalog(),
+    [tick],
+  );
+
+  const getRedemptions = useCallback(
+    (userId: User): RedemptionRecord[] => rewards.getRedemptions(userId),
+    [tick],
+  );
+
   return {
     getUserStats,
     getLeaderboard,
+    getCatalog,
+    getRedemptions,
     addXP,
     addPoints,
     deductPoints,
     unlockBadge,
     updateStreak,
     resetStreak,
+    redeemReward,
     log,
     liveCode,
   };

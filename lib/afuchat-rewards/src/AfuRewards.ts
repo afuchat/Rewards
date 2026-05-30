@@ -8,11 +8,15 @@ import type { BadgeDefinition } from "./modules/badges.js";
 import { StreaksModule } from "./modules/streaks.js";
 import { LeaderboardModule } from "./modules/leaderboard.js";
 import { EventsModule } from "./modules/events.js";
+import { RewardsModule } from "./modules/rewards.js";
+import type { RewardDefinition } from "./modules/rewards.js";
 import type {
   AfuRewardsConfig,
   Badge,
   EventCallback,
   LeaderboardEntry,
+  Reward,
+  RedemptionRecord,
   StreakRecord,
 } from "./types.js";
 
@@ -25,6 +29,7 @@ export class AfuRewards {
   private streaks: StreaksModule;
   private leaderboard: LeaderboardModule;
   private events: EventsModule;
+  private rewardsCatalog: RewardsModule;
 
   constructor(config: AfuRewardsConfig = {}) {
     this.store = new MemoryStore();
@@ -35,6 +40,7 @@ export class AfuRewards {
     this.streaks = new StreaksModule(this.store);
     this.leaderboard = new LeaderboardModule(this.store);
     this.events = new EventsModule();
+    this.rewardsCatalog = new RewardsModule(this.store);
   }
 
   // ─── XP ────────────────────────────────────────────────────────────────────
@@ -114,6 +120,29 @@ export class AfuRewards {
   resetStreak(userId: string): void {
     this.streaks.resetStreak(userId);
     this.events.emit("streak_reset", { userId });
+  }
+
+  // ─── Rewards Catalog ───────────────────────────────────────────────────────
+
+  defineReward(id: string, def: RewardDefinition): void {
+    this.rewardsCatalog.defineReward(id, def);
+  }
+
+  getCatalog(): Array<Reward & { stockRemaining?: number }> {
+    return this.rewardsCatalog.getCatalog();
+  }
+
+  redeemReward(userId: string, rewardId: string): RedemptionRecord | null {
+    const record = this.rewardsCatalog.redeemReward(userId, rewardId);
+    if (record) {
+      const pointsRemaining = this.points.getPoints(userId);
+      this.events.emit("reward_redeemed", { userId, record, pointsRemaining });
+    }
+    return record;
+  }
+
+  getRedemptions(userId: string): RedemptionRecord[] {
+    return this.rewardsCatalog.getRedemptions(userId);
   }
 
   // ─── Leaderboard ───────────────────────────────────────────────────────────
