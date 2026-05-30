@@ -1,0 +1,30 @@
+{
+  "name": "@afuchat/rewards",
+  "version": "1.0.0",
+  "description": "Zero-config gamification SDK — XP, points, levels, badges, streaks, and leaderboards out of the box.",
+  "keywords": ["gamification", "xp", "points", "badges", "streaks", "leaderboard", "sdk"],
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "workspace": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "node build.mjs && tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "esbuild": "0.27.3",
+    "typescript": "~5.9.3"
+  }
+}
